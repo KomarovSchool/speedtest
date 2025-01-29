@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bandwidth Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #progress {
+            margin-top: 20px;
+            font-size: 1.1em;
+            display: none;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bandwidth Test</h1>
+    <button id="startTest">Start Test</button>
+    <div id="progress">
+        <p>Downloaded: <span id="bytesDownloaded">0</span> MB</p>
+        <p>Average Speed: <span id="avgSpeed">0.00</span> MB/s</p>
+    </div>
+    <p id="result"></p>
+
+    <script>
+        const startTestButton = document.getElementById('startTest');
+        const progressDiv = document.getElementById('progress');
+        const bytesDownloadedSpan = document.getElementById('bytesDownloaded');
+        const avgSpeedSpan = document.getElementById('avgSpeed');
+        const resultParagraph = document.getElementById('result');
+
+        startTestButton.addEventListener('click', async () => {
+            startTestButton.disabled = true;
+            progressDiv.style.display = 'block';
+            resultParagraph.innerText = '';
+
+            const startTime = performance.now();
+            const response = await fetch('/download');
+            const reader = response.body.getReader();
+            let totalBytesRead = 0;
+            let avgSpeed = 0.0;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value) {
+                    totalBytesRead += value.length;
+                    const currentTime = performance.now();
+                    const duration = (currentTime - startTime) / 1000; // in seconds
+                    avgSpeed = (totalBytesRead / (1024 * 1024)) / duration; // in MB/s
+
+                    bytesDownloadedSpan.innerText = (totalBytesRead / (1024 * 1024)).toFixed(2);
+                    avgSpeedSpan.innerText = avgSpeed.toFixed(2);
+                }
+            }
+
+            const endTime = performance.now();
+            const duration = (endTime - startTime) / 1000; // in seconds
+            const dataSize = 100 * 1024 * 1024; // 100 MB in bytes
+            const finalSpeed = (dataSize / (1024 * 1024)) / duration; // in MB/s
+
+            startTestButton.disabled = false;
+            progressDiv.style.display = 'none';
+            resultParagraph.innerText = `Download speed: ${finalSpeed.toFixed(2)} MB/s`;
+        });
+    </script>
+</body>
+</html>
